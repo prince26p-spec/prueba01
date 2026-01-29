@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensaje Personalizado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0f172a;
+            color: white;
+            overflow-x: hidden;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    
+    <div id="loader" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>
+
+    <!-- Contenido para Mensaje (Tipo: hola) -->
+    <div id="mensaje-view" class="hidden w-full max-w-2xl text-center">
+        <div class="glass p-12 rounded-3xl shadow-2xl animate__animated animate__zoomIn">
+            <h1 id="msg-nombre" class="text-5xl md:text-7xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                Hola
+            </h1>
+            <p id="msg-texto" class="text-xl md:text-2xl text-slate-300 leading-relaxed animate__animated animate__fadeIn animate__delay-1s">
+                Cargando mensaje...
+            </p>
+            <div class="mt-12 animate__animated animate__bounceIn animate__delay-2s">
+                <span class="inline-block p-4 rounded-full bg-white/5 text-pink-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido para Calendario -->
+    <div id="calendario-view" class="hidden w-full max-w-md">
+        <div id="calendar-card" class="glass p-8 rounded-3xl shadow-2xl animate__animated animate__fadeInUp">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="cal-nombre" class="text-2xl font-bold">Calendario</h2>
+                <div id="cal-mes" class="text-slate-400 font-medium">Enero 2026</div>
+            </div>
+            
+            <div class="grid grid-cols-7 gap-2 mb-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+            </div>
+            
+            <div id="calendar-days" class="calendar-grid">
+                <!-- Se llenará dinámicamente -->
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-white/10 text-center">
+                <p class="text-sm text-slate-400">Hoy es un gran día para ser <span id="cal-nombre-footer" class="text-white font-bold">Tú</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error View -->
+    <div id="error-view" class="hidden text-center">
+        <h2 class="text-3xl font-bold text-red-400 mb-4">Ups! No encontramos nada</h2>
+        <p class="text-slate-400">Asegúrate de que el enlace sea correcto.</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

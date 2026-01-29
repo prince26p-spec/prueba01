@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Sistema de Mensajes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0f172a;
+            color: white;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        input,
+        textarea,
+        select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 12px;
+            padding: 12px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6366f1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            transition: transform 0.2s;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+
+        .tab-active {
+            border-bottom: 2px solid #6366f1;
+            color: #6366f1;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+    <!-- Login Section -->
+    <div id="login-section" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass p-8 rounded-3xl w-full max-w-md shadow-2xl">
+            <h1 class="text-3xl font-bold mb-6 text-center">Acceso Admin</h1>
+            <form id="login-form" class="space-y-4">
+                <div class="flex flex-col">
+                    <label class="text-sm text-slate-400 mb-1">Email</label>
+                    <input type="email" id="login-email" placeholder="admin@example.com" required>
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-sm text-slate-400 mb-1">Contraseña</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit"
+                    class="w-full btn-primary py-3 rounded-xl font-bold shadow-lg shadow-indigo-500/20">
+                    Entrar
+                </button>
+            </form>
+            <p id="login-error" class="text-red-400 text-sm mt-4 text-center hidden"></p>
+        </div>
+    </div>
+
+    <!-- Main Admin Dashboard (Hidden by default) -->
+    <div id="admin-dashboard" class="hidden p-4 md:p-8 max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-12">
+            <div>
+                <h1
+                    class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                    Dashboard</h1>
+                <p class="text-slate-400">Gestiona tus mensajes y calendarios</p>
+            </div>
+            <button id="btn-logout"
+                class="px-6 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all font-semibold">
+                Cerrar Sesión
+            </button>
+        </header>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <!-- Form Column -->
+            <div class="md:col-span-1 space-y-6">
+                <!-- Tab Selector -->
+                <div class="flex gap-4 border-b border-white/10 mb-6">
+                    <button id="tab-hola" class="pb-2 px-2 tab-active font-semibold">Mensaje</button>
+                    <button id="tab-calendario" class="pb-2 px-2 text-slate-400 font-semibold">Calendario</button>
+                </div>
+
+                <!-- Hola Form -->
+                <div id="form-hola" class="glass p-6 rounded-2xl space-y-4">
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-400 mb-1">Nombre</label>
+                        <input type="text" id="hola-nombre" placeholder="Ej: María">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-400 mb-1">Mensaje</label>
+                        <textarea id="hola-mensaje" rows="4" placeholder="Escribe algo bonito..."></textarea>
+                    </div>
+                    <button id="save-hola" class="w-full btn-primary py-3 rounded-xl font-bold">Guardar Mensaje</button>
+                </div>
+
+                <!-- Calendario Form -->
+                <div id="form-calendario" class="hidden glass p-6 rounded-2xl space-y-4">
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-400 mb-1">Nombre para el Calendario</label>
+                        <input type="text" id="cal-nombre-input" placeholder="Ej: Juan">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-400 mb-1">Color de Acento</label>
+                        <input type="color" id="cal-color-input" class="h-12 w-full cursor-pointer" value="#6366f1">
+                    </div>
+                    <button id="save-calendario" class="w-full btn-primary py-3 rounded-xl font-bold">Crear
+                        Calendario</button>
+                </div>
+            </div>
+
+            <!-- List Column -->
+            <div class="md:col-span-2 space-y-6">
+                <div class="glass rounded-2xl overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-white/5">
+                            <tr>
+                                <th class="p-4 text-slate-400 font-semibold text-sm">Tipo</th>
+                                <th class="p-4 text-slate-400 font-semibold text-sm">Nombre</th>
+                                <th class="p-4 text-slate-400 font-semibold text-sm">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body" class="divide-y divide-white/5">
+                            <!-- Rows dynamycally added -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para QR -->
+    <div id="qr-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="glass p-8 rounded-3xl max-w-sm w-full text-center">
+            <h3 class="text-xl font-bold mb-6">Código QR</h3>
+            <div id="qrcode" class="flex justify-center bg-white p-4 rounded-xl mb-6"></div>
+            <button onclick="document.getElementById('qr-modal').classList.add('hidden')"
+                class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold">Cerrar</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
