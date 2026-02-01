@@ -367,12 +367,11 @@ function initGame() {
     blocks.push({ x: houseX - 50, y: floorY - 150, w: TILE_SIZE, h: TILE_SIZE, type: 'qblock', hit: false, content: 'flower' });
 
 
-    // Piranha Plant Area with SOLID PIPE
     const pipeX = canvas.width * 0.5;
     const pipeW = 60;
     const pipeH = 80;
 
-    // Add pipe as a solid block (collidable)
+    // Add pipe 1
     blocks.push({
         x: pipeX,
         y: floorY - pipeH,
@@ -384,7 +383,46 @@ function initGame() {
         breakable: false
     });
 
-    enemies.push(new Enemy(pipeX + 10, floorY - pipeH - 40, 0, false, 'piranha'));
+    // Add pipe 2 (Next to pipe 1)
+    const pipe2X = pipeX + 65;
+    blocks.push({
+        x: pipe2X,
+        y: floorY - pipeH,
+        w: pipeW,
+        h: pipeH,
+        type: 'pipe',
+        hit: false,
+        content: 'none',
+        breakable: false
+    });
+
+    // Piranha Plant (Hidden inside pipe initially)
+    enemies.push(new Enemy(pipeX, floorY - pipeH, 0, false, 'piranha'));
+
+    // MOVE QUESTION BLOCKS NEAR PIPES
+    // Block 1 (Radio trigger) - 5 hits
+    blocks.push({
+        x: pipeX - 80,
+        y: floorY - 180,
+        w: TILE_SIZE,
+        h: TILE_SIZE,
+        type: 'qblock',
+        hit: false,
+        content: 'radio_trigger',
+        hitsLeft: 5,
+        breakable: false
+    });
+    // Block 2
+    blocks.push({
+        x: pipe2X + 80,
+        y: floorY - 180,
+        w: TILE_SIZE,
+        h: TILE_SIZE,
+        type: 'qblock',
+        hit: false,
+        content: 'coin',
+        breakable: false
+    });
 
     // Floating Platforms - RAISED HIGHER for easier enemy stomping
     createPlatform(canvas.width * 0.2, floorY - 220, 200, 'brick');
@@ -432,39 +470,34 @@ function initGame() {
 
     // Enemies (Initial) - Fixed Y position for 60px height
     enemies.push(new Enemy(canvas.width * 0.3, floorY - 60, 100));
+    enemies.push(new Enemy(canvas.width * 0.6, floorY - 60, 150));
+    enemies.push(new Enemy(canvas.width * 1.2, floorY - 60, 200));
+    // New Enemies
+    enemies.push(new Enemy(canvas.width * 0.6, floorY - 280 - 60, 100, false, 'paragoomba')); // On floating platform
+    enemies.push(new Enemy(canvas.width * 1.4, floorY - 60, 150)); // Far right
 
     // --- RIGHT EXPANSION ( > CanvasWidth) ---
     // Floor Continues
     createPlatform(canvas.width, floorY, canvas.width * 1.5, 'brick');
 
-    // Photos Area
+    // Photo Area
     const photoX1 = canvas.width + 300;
-    const photoX2 = canvas.width + 700;
     // Special Cloud
     decorations.push({
         type: 'cloud',
-        x: (photoX1 + photoX2) / 2,
+        x: photoX1,
         y: floorY - 500,
         text: "Con mucho cariño para ti",
         w: 300,
         h: 100,
         floatOffset: 0
     });
-    // Photos with Float Animation
+    // One Photo with Float Animation
     decorations.push({ type: 'photo', img: 'assets/photo1.png', x: photoX1, y: floorY - 250, w: 200, h: 200, floatOffset: 0 });
-    decorations.push({ type: 'photo', img: 'assets/photo2.png', x: photoX2, y: floorY - 250, w: 200, h: 200, floatOffset: Math.PI });
 
     // --- LEFT EXPANSION ( < 0 ) ---
     // Floor Extended Left
     createPlatform(-canvas.width * 1.5, floorY, canvas.width * 1.5, 'brick');
-
-    // Special Enemy Area (approx -600) - Fixed Y position
-    enemies.push(new Enemy(-600, floorY - 60, 300, true, 'paragoomba')); // true = special, 'paragoomba' type
-
-    // Rain Zone (approx -1000)
-    // Balloon at -1200
-    decorations.push({ type: 'balloon', x: -1200, y: floorY - 300, w: 40, h: 50 });
-
 
     // Player Start
     player = new Player(100, floorY - 100);
@@ -536,18 +569,13 @@ function loop() {
         }
         else if (d.type === 'cloud') {
             const cy = d.y + dy;
-            // Draw Cloud Image if available, else shapes
-            if (!ASSETS.cloud) { ASSETS.cloud = new Image(); ASSETS.cloud.src = 'assets/cloud.png'; }
+            if (!ASSETS.cloud) { ASSETS.cloud = new Image(); ASSETS.cloud.src = 'assets/nube.png'; }
 
             if (ASSETS.cloud.complete && ASSETS.cloud.naturalHeight !== 0) {
                 try {
                     ctx.drawImage(ASSETS.cloud, d.x - d.w / 2, cy, d.w, d.h);
                 } catch (e) {
-                    // Fallback if draw fails
-                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-                    ctx.beginPath();
-                    ctx.ellipse(d.x, cy + 20, d.w / 2, d.h / 2, 0, 0, Math.PI * 2);
-                    ctx.fill();
+                    // Fallback removed to ensure image is used
                 }
             } else {
                 // Loading/Fallback
@@ -566,20 +594,6 @@ function loop() {
             ctx.textAlign = 'center';
             ctx.fillText(d.text, d.x, cy + 120);
             ctx.restore();
-        }
-        else if (d.type === 'balloon') {
-            // String
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(d.x, d.y + 40);
-            ctx.lineTo(d.x, d.y + 100);
-            ctx.stroke();
-            // Balloon
-            ctx.fillStyle = '#ef4444';
-            ctx.beginPath();
-            ctx.ellipse(d.x, d.y, 25, 35, 0, 0, Math.PI * 2);
-            ctx.fill();
         }
         else if (d.type === 'flag') {
             if (!ASSETS.flag) { ASSETS.flag = new Image(); ASSETS.flag.src = 'assets/start_flag.png'; }
@@ -610,6 +624,26 @@ function loop() {
             } else {
                 ctx.fillStyle = '#22c55e';
                 ctx.fillRect(d.x, d.y, d.w, d.h);
+            }
+        }
+    });
+
+    // Update Enemies (Drawn before blocks so piranhas are behind pipes)
+    enemies.forEach(e => {
+        e.update();
+        e.draw();
+
+        // Collsion with Player
+        if (checkRectCollide(player, e) && !e.dead) {
+            const playerBottom = player.y + player.h;
+            // Check stomp (Goombas only)
+            if (e.type !== 'piranha' && player.vy > 0 && playerBottom < e.y + e.h * 0.8) {
+                // Bounce
+                player.vy = -8;
+                e.die();
+                GameAudio.bump();
+            } else {
+                player.takeDamage();
             }
         }
     });
@@ -719,6 +753,12 @@ function loop() {
                 spawnRomanticEffect();
                 items.splice(i, 1);
             }
+            else if (item.type === 'radio') {
+                GameAudio.powerup();
+                GameAudio.playRomanticMusic(); // Play a nice song
+                spawnMariachis();
+                items.splice(i, 1);
+            }
             else if (item.type === 'flower') {
                 GameAudio.powerup();
                 winGame();
@@ -728,24 +768,7 @@ function loop() {
     });
 
 
-    // Update Enemies
-    enemies.forEach(e => {
-        e.update();
-        e.draw();
 
-        // Collsion with Player
-        if (checkRectCollide(player, e) && !e.dead) {
-            const playerBottom = player.y + player.h;
-            if (player.vy > 0 && playerBottom < e.y + e.h * 0.8) {
-                // Bounce
-                player.vy = -8;
-                e.die();
-                GameAudio.bump();
-            } else {
-                player.takeDamage();
-            }
-        }
-    });
 
     // Update and draw particles (floating letters and hearts)
     particles.forEach((p, i) => {
@@ -814,7 +837,7 @@ class Player {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.w = 50;
+        this.w = 40;
         this.h = 70; // Slightly larger hit box
         this.vx = 0;
         this.vy = 0;
@@ -866,7 +889,7 @@ class Player {
 
         // Remove Screen Bounds Clamping for Infinite World (Or clamp to new world bounds if needed)
         // For now, let's just limit not falling off too far left
-        if (this.x < -2000) this.x = -2000;
+        if (this.x < 0) this.x = 0;
 
         // Vertical
         this.vy += GRAVITY;
@@ -878,6 +901,7 @@ class Player {
         // Platform Collisions (Removed mostly, now using blocks)
         // Adapt platform physics for BLOCKS
         blocks.forEach((b, idx) => {
+            if (b.broken) return;
             if (checkRectCollide(this, b)) {
 
                 // Top Collision (Standing on top)
@@ -1004,7 +1028,7 @@ class Player {
             // Adjust width based on state
             // User feedback: Run looks good wide (1.4x), Idle/Jump slightly thinner (0.8x)
             let widthMultiplier = 0.8;
-            if (this.state === 'run') {
+            if (this.state === 'run' && Math.abs(this.vx) > 0.1) {
                 widthMultiplier = 1.4;
             }
             const drawW = this.w * widthMultiplier;
@@ -1091,7 +1115,39 @@ class Enemy {
         if (this.dead) return;
 
         if (this.type === 'piranha') {
-            // Static piranha - no movement
+            const playerDist = Math.abs((player.x + player.w / 2) - (this.x + this.w / 2));
+
+            // State Machine
+            if (this.piranhaState === 'hidden') {
+                this.piranhaTimer++;
+                // Wait 2 seconds, then rise if player is not too close (safe zone)
+                if (this.piranhaTimer > 120) {
+                    if (playerDist > 80) { // Don't come out if player is standing on pipe
+                        this.piranhaState = 'rising';
+                    }
+                }
+            } else if (this.piranhaState === 'rising') {
+                this.y -= 1;
+                // Using startY which we will treat as the "hidden" Y (pipe top level)
+                // We want to rise to showY.
+                if (this.y <= this.piranhaShowY) {
+                    this.y = this.piranhaShowY;
+                    this.piranhaState = 'showing';
+                    this.piranhaTimer = 0;
+                }
+            } else if (this.piranhaState === 'showing') {
+                this.piranhaTimer++;
+                if (this.piranhaTimer > 120) { // Stay up for 2 seconds
+                    this.piranhaState = 'lowering';
+                }
+            } else if (this.piranhaState === 'lowering') {
+                this.y += 1;
+                if (this.y >= this.piranhaHiddenY) {
+                    this.y = this.piranhaHiddenY;
+                    this.piranhaState = 'hidden';
+                    this.piranhaTimer = 0;
+                }
+            }
             return;
         }
 
@@ -1214,6 +1270,26 @@ class Item {
             const frameW = ASSETS.tiles.fireflower.img.naturalWidth / frames;
             const frameH = ASSETS.tiles.fireflower.img.naturalHeight;
             ctx.drawImage(ASSETS.tiles.fireflower.img, frameIndex * frameW, 0, frameW, frameH, this.x, this.y, this.w, this.h);
+        } else if (this.type === 'radio') {
+            // Draw Radio with balloon
+            ctx.save();
+            // Balloon string
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(this.x + this.w / 2, this.y + 10);
+            ctx.lineTo(this.x + this.w / 2, this.y - 30);
+            ctx.stroke();
+            // Balloon
+            ctx.fillStyle = '#ff4444';
+            ctx.beginPath();
+            ctx.ellipse(this.x + this.w / 2, this.y - 50, 20, 25, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Radio Emoji / Design
+            ctx.font = '40px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('📻', this.x + this.w / 2, this.y + this.h);
+            ctx.restore();
         } else {
             // Fallback
             const sprite = this.type === 'coin' ? SPRITES.coin : SPRITES.flower;
@@ -1305,6 +1381,7 @@ function hitBlock(b) {
 
             if (allLettersRevealed) {
                 // Show special message or bonus
+                spawnRomanticEffect();
                 setTimeout(() => {
                     GameAudio.coin();
                     coinsCollected += 10; // Bonus coins
@@ -1328,6 +1405,19 @@ function hitBlock(b) {
                 b.coinsLeft--;
                 if (b.coinsLeft <= 0) b.hit = true;
                 else b.hit = false; // Keep active
+            }
+        } else if (b.content === 'radio_trigger') {
+            if (b.hitsLeft > 0) {
+                b.hitsLeft--;
+                GameAudio.bump();
+                // Pop effect
+                b.y -= 10;
+                setTimeout(() => b.y += 10, 100);
+
+                if (b.hitsLeft === 0) {
+                    b.hit = true;
+                    spawnRadioDrop(b);
+                }
             }
         } else if (b.content === 'flower') {
             b.hit = true;
@@ -1469,3 +1559,42 @@ GameAudio.playWinTheme = () => {
         osc.stop(now + note.t + 0.6);
     });
 };
+// Helper to spawn radio from sky
+function spawnRadioDrop(block) {
+    const radio = new Item(block.x, -100, 'radio');
+    radio.vy = 2; // Slow fall
+    radio.update = function () {
+        this.y += this.vy;
+        const groundY = canvas.height - 100 - this.h;
+        if (this.y > groundY) {
+            this.y = groundY;
+            this.vy = 0;
+        }
+    };
+    items.push(radio);
+}
+
+function spawnMariachis() {
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            const mx = player.x + (i - 2) * 80;
+            const my = canvas.height - 100 - 60;
+            const mariachi = new Enemy(mx, my, 0, false, 'mariachi');
+            mariachi.update = function () {
+                // Dance animation
+                this.y = this.startY + Math.sin(Date.now() / 200) * 10;
+            };
+            mariachi.draw = function () {
+                ctx.save();
+                ctx.font = '50px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('👨‍🎤', this.x, this.y + 40); // Mariachi Emoji fallback
+                ctx.font = '20px sans-serif';
+                ctx.fillText('🎻', this.x + 20, this.y + 20);
+                ctx.restore();
+            };
+            mariachi.die = () => { }; // Immortals
+            enemies.push(mariachi);
+        }, i * 200);
+    }
+}
