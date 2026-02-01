@@ -428,11 +428,13 @@ function initGame() {
         }
     };
 
-    // Main Ground (Start)
-    createPlatform(0, floorY, canvas.width, 'brick');
+    // Main Ground (Start) - COMPACT WORLD (60 Blocks)
+    const WORLD_COLS = 60;
+    const worldWidth = WORLD_COLS * TILE_SIZE;
+    createPlatform(-1000, floorY, worldWidth + 2000, 'brick'); // Extra floor left/right
 
-    // Ends CASTLE (Replaces House)
-    const houseX = canvas.width + 900;
+    // Ends CASTLE (Replaces House) - At the end of the fixed world
+    const houseX = worldWidth - 200;
     decorations.push({ type: 'castle', x: houseX, y: floorY - 180, w: 180, h: 180 });
 
     // SPECIAL BLOCKS NEAR CASTLE
@@ -442,7 +444,7 @@ function initGame() {
     blocks.push({ x: houseX - 50, y: floorY - 150, w: TILE_SIZE, h: TILE_SIZE, type: 'qblock', hit: false, content: 'blue_coin' });
 
 
-    const pipeX = canvas.width * 0.5;
+    const pipeX = 700; // Moved pipe further
     const pipeW = 60;
     const pipeH = 80;
 
@@ -471,18 +473,18 @@ function initGame() {
         breakable: false
     });
 
-    // Piranha Plant (Hidden inside pipe initially) - Proper size
+    // Piranha Plant on pipe
     const piranha = new Enemy(pipeX + 5, floorY - pipeH, 0, false, 'piranha');
-    piranha.w = 50; // Normal width
-    piranha.h = 60; // Normal height
-    piranha.piranhaHiddenY = floorY - pipeH; // Hidden at pipe top
-    piranha.piranhaShowY = floorY - pipeH - 50; // Show 50px above pipe
+    piranha.w = 50;
+    piranha.h = 60;
+    piranha.piranhaHiddenY = floorY - pipeH;
+    piranha.piranhaShowY = floorY - pipeH - 50;
     enemies.push(piranha);
 
     // MOVE QUESTION BLOCKS NEAR PIPES
-    // Block 1 (Radio trigger) - 5 hits
+    // Block 1 (Radio trigger) - Spaced out from platform
     blocks.push({
-        x: pipeX - 80,
+        x: pipeX - 100,
         y: floorY - 180,
         w: TILE_SIZE,
         h: TILE_SIZE,
@@ -504,19 +506,21 @@ function initGame() {
         breakable: false
     });
 
-    // Floating Platforms - RAISED HIGHER for easier enemy stomping
-    createPlatform(canvas.width * 0.2, floorY - 220, 200, 'brick');
-    createPlatform(canvas.width * 0.6, floorY - 280, 250, 'brick');
+    // Floating Platforms - Fixed Position
+    // Platform User mentioned (5 bricks)
+    createPlatform(300, floorY - 200, 200, 'brick');
+
+    // Another platform higher up
+    createPlatform(900, floorY - 280, 200, 'brick');
 
     // --- LETTER BLOCKS (Dynamic based on name) ---
-    // Create blocks that spell out the player's name when hit
-    const playerName = (messageData.nombre || 'PLAYER').toUpperCase().substring(0, 12); // Max 12 letters
+    const playerName = (messageData.nombre || 'PLAYER').toUpperCase().substring(0, 12);
     const nameLength = playerName.length;
 
-    // Calculate starting position for centered letter blocks
-    const letterBlockStartX = canvas.width * 0.4;
-    const letterBlockY = floorY - 400; // Moved higher up
-    const letterBlockSpacing = TILE_SIZE + 10; // Small gap between blocks
+    // Fixed Start Position closer
+    const letterBlockStartX = 1200;
+    const letterBlockY = floorY - 250;
+    const letterBlockSpacing = TILE_SIZE + 10;
 
     // Create letter blocks
     for (let i = 0; i < nameLength; i++) {
@@ -540,32 +544,27 @@ function initGame() {
     items.push(new Item(centerX, letterBlockY - 60, 'fireflower'));
 
 
-    // More Coins (Mario style lines)
+    // More Coins 
     for (let i = 0; i < 5; i++) {
         items.push(new Item(letterBlockStartX + 200 + i * 40, letterBlockY - 100, 'coin'));
     }
+    // Coins near end
     for (let i = 0; i < 5; i++) {
-        items.push(new Item(canvas.width + 100 + i * 40, floorY - 150, 'coin'));
+        items.push(new Item(houseX - 500 + i * 40, floorY - 150, 'coin'));
     }
 
-    // Enemies (Initial) - Fixed Y position for 60px height
-    enemies.push(new Enemy(canvas.width * 0.3, floorY - 60, 100));
-    enemies.push(new Enemy(canvas.width * 0.6, floorY - 60, 150));
-    enemies.push(new Enemy(canvas.width * 1.2, floorY - 60, 200));
-    // Removed the floating platform enemy that was blocking the player
-    enemies.push(new Enemy(canvas.width * 1.4, floorY - 60, 150)); // Far right
+    // Enemies (Initial) - Fixed positions Compacted
+    enemies.push(new Enemy(600, floorY - 60, 100)); // Near pipe
+    enemies.push(new Enemy(1400, floorY - 60, 150)); // After letters
+    enemies.push(new Enemy(2000, floorY - 60, 150)); // Near end
 
-    // --- RIGHT EXPANSION ( > CanvasWidth) ---
-    // Floor Continues
-    createPlatform(canvas.width, floorY, canvas.width * 1.5, 'brick');
-
-    // Photo Area
-    const photoX1 = canvas.width + 300;
+    // Photo Area - Uses houseX (world end)
+    const photoX1 = houseX - 350;
     // Special Cloud
     decorations.push({
         type: 'cloud',
         x: photoX1,
-        y: floorY - 500,
+        y: floorY - 400,
         text: `✨ El mundo de ${messageData.nombre || 'TI'} ✨`,
         w: 300,
         h: 100,
@@ -574,14 +573,8 @@ function initGame() {
     });
     // One Photo with Float Animation (Custom Image Support)
     const photoUrl = messageData.url_imagen || 'assets/artistas/chancho.jpg';
-    // Center photo below cloud (Cloud W=300, Photo W=200). 
-    // Cloud center is photoX1. Photo is drawn from top-left.
-    // So Photo X should be photoX1 - 100.
+    // Center photo below cloud
     decorations.push({ type: 'photo', img: photoUrl, x: photoX1 - 100, y: floorY - 250, w: 200, h: 200, floatOffset: 0 });
-
-    // --- LEFT EXPANSION ( < 0 ) ---
-    // Floor Extended Left
-    createPlatform(-canvas.width * 1.5, floorY, canvas.width * 1.5, 'brick');
 
     // Player Start
     player = new Player(100, floorY - 100);
@@ -1056,17 +1049,9 @@ class Player {
 
         this.x += this.vx;
 
-        // World Limit Check (Castle)
-        const houseX = canvas.width + 900;
-        const worldLimit = houseX + 100; // Stop at castle center
-        if (this.x > worldLimit) {
-            this.x = worldLimit;
-            this.vx = 0;
-        }
+        // No World Limits - Infinite falling/running allowed
+        // Only gravity and floor stop you
 
-        // Remove Screen Bounds Clamping for Infinite World (Or clamp to new world bounds if needed)
-        // For now, let's just limit not falling off too far left
-        if (this.x < 0) this.x = 0;
 
         // Vertical
         this.vy += GRAVITY;
