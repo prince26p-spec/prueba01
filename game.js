@@ -33,7 +33,8 @@ const ASSETS = {
         gean: { src: 'assets/artistas/gean.png', frames: 4, img: null },
         radio: { src: 'assets/artistas/radio.png', img: null },
         nota: { src: 'assets/artistas/nota.png', img: null },
-        bluecoin: { src: 'assets/objetos/spr_coinblue_strip4.png', frames: 4, img: null }
+        bluecoin: { src: 'assets/objetos/spr_coinblue_strip4.png', frames: 4, img: null },
+        firework: { src: 'assets/artistas/fuego.gif', img: null }
     }
 };
 // Preload Mario & Object Assets
@@ -53,7 +54,8 @@ const preloadList = [
     ASSETS.tiles.fireflower,
     ASSETS.tiles.gean,
     ASSETS.tiles.radio,
-    ASSETS.tiles.nota
+    ASSETS.tiles.nota,
+    ASSETS.tiles.firework
 ];
 preloadList.forEach(obj => {
     if (obj && obj.src) {
@@ -116,7 +118,10 @@ const GameAudio = {
     bgmAudio: new Audio('Sound/FondoMusica.mp3'),
     romanticAudio: null, // Will be created when needed
     geanAudio: new Audio('assets/artistas/musicagean.mp3'), // New Music
-    brickBreak: new Audio('Sound/brick_break.mp3'),
+    brickBreak: new Audio('assets/mario/sounds/romper_ladrillo.mp3'),
+    jumpAudio: new Audio('assets/mario/sounds/mario-bros-jump.mp3'),
+    coinAudio: new Audio('assets/mario/sounds/mario-coin.mp3'),
+    gameOverAudio: new Audio('assets/mario/sounds/mario-bros game over.mp3'),
     volume: 0.4,
 
     init: () => {
@@ -127,13 +132,18 @@ const GameAudio = {
         GameAudio.bgmAudio.loop = true;
         GameAudio.bgmAudio.volume = GameAudio.volume;
         GameAudio.brickBreak.volume = GameAudio.volume;
+        GameAudio.jumpAudio.volume = GameAudio.volume;
+        GameAudio.coinAudio.volume = GameAudio.volume;
+        GameAudio.gameOverAudio.volume = GameAudio.volume;
     },
 
     setVolume: (val) => {
         GameAudio.volume = parseFloat(val);
-        if (GameAudio.bgmAudio) {
-            GameAudio.bgmAudio.volume = GameAudio.volume;
-        }
+        if (GameAudio.bgmAudio) GameAudio.bgmAudio.volume = GameAudio.volume;
+        if (GameAudio.brickBreak) GameAudio.brickBreak.volume = GameAudio.volume;
+        if (GameAudio.jumpAudio) GameAudio.jumpAudio.volume = GameAudio.volume;
+        if (GameAudio.coinAudio) GameAudio.coinAudio.volume = GameAudio.volume;
+        if (GameAudio.gameOverAudio) GameAudio.gameOverAudio.volume = GameAudio.volume;
     },
 
     playTone: (freq, type, duration) => {
@@ -155,13 +165,34 @@ const GameAudio = {
         osc.start();
         osc.stop(GameAudio.ctx.currentTime + duration);
     },
-    jump: () => GameAudio.playTone(400, 'square', 0.1),
+    jump: () => {
+        if (GameAudio.muted) return;
+        GameAudio.jumpAudio.currentTime = 0;
+        GameAudio.jumpAudio.play().catch(e => console.log(e));
+    },
     coin: () => {
-        GameAudio.playTone(600, 'sine', 0.1);
-        setTimeout(() => GameAudio.playTone(900, 'sine', 0.2), 100);
+        if (GameAudio.muted) return;
+        GameAudio.coinAudio.currentTime = 0;
+        GameAudio.coinAudio.play().catch(e => console.log(e));
     },
     bump: () => GameAudio.playTone(150, 'sawtooth', 0.1),
-    breakBrick: () => GameAudio.playTone(200, 'square', 0.15),
+    breakBrick: () => {
+        if (GameAudio.muted) return;
+        GameAudio.brickBreak.currentTime = 0;
+        GameAudio.brickBreak.play().catch(e => console.log(e));
+    },
+    gameOver: () => {
+        GameAudio.stopBGM();
+        if (GameAudio.geanAudio) GameAudio.geanAudio.pause();
+        if (!GameAudio.muted) {
+            GameAudio.gameOverAudio.play().catch(e => console.log(e));
+        }
+        // Redirect or reload after sound finishes (approx 4 seconds)
+        setTimeout(() => {
+            alert('¡Oh no! Inténtalo de nuevo.');
+            location.reload();
+        }, 4000);
+    },
     powerup: () => {
         let now = GameAudio.ctx.currentTime;
         [500, 600, 700, 800, 1000].forEach((f, i) => {
@@ -405,7 +436,7 @@ function initGame() {
         if (gameState !== 'PLAYING') return;
         gameTime--;
         if (gameTime <= 0) {
-            gameOver();
+            GameAudio.gameOver();
         }
         updateUI();
     }, 1000);
@@ -494,7 +525,7 @@ function initGame() {
         hitsLeft: 5,
         breakable: false
     });
-    // Block 2
+    // Block 2 (Cake trigger)
     blocks.push({
         x: pipe2X + 80,
         y: floorY - 180,
@@ -502,7 +533,7 @@ function initGame() {
         h: TILE_SIZE,
         type: 'qblock',
         hit: false,
-        content: 'coin',
+        content: 'cake_trigger',
         breakable: false
     });
 
@@ -810,7 +841,10 @@ function loop() {
         const bY = b.y;
 
         // Draw
-        if (b.type === 'pipe') {
+        if (b.type === 'cake') {
+            ctx.fillStyle = b.color;
+            ctx.fillRect(bX, bY, b.w, b.h);
+        } else if (b.type === 'pipe') {
             // Special rendering for pipe
             const pipeImg = ASSETS.tiles.pipe.img;
             if (pipeImg && pipeImg.complete) {
@@ -981,6 +1015,37 @@ function loop() {
             ctx.textBaseline = 'middle';
             ctx.fillText(p.emoji, p.x, p.y);
             ctx.restore();
+        } else if (p.type === 'firework') {
+            p.life--;
+            if (p.life <= 0) {
+                particles.splice(i, 1);
+                return;
+            }
+
+            const img = ASSETS.tiles.firework.img;
+            if (img && img.complete) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.scale(p.scale, p.scale);
+                ctx.globalAlpha = Math.min(1, p.life / 30);
+                if (p.filter) ctx.filter = p.filter;
+                ctx.drawImage(img, -p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+            }
+        } else if (p.type === 'text') {
+            p.y += p.vy;
+            p.life--;
+            if (p.life <= 0) {
+                particles.splice(i, 1);
+                return;
+            }
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, p.life / 10);
+            ctx.fillStyle = p.color || 'white';
+            ctx.font = 'bold 20px Outfit';
+            ctx.textAlign = 'center';
+            ctx.fillText(p.text, p.x, p.y);
+            ctx.restore();
         }
     });
 
@@ -1065,6 +1130,14 @@ class Player {
         blocks.forEach((b, idx) => {
             if (b.broken) return;
             if (checkRectCollide(this, b)) {
+                // Eatable Cake Blocks
+                if (b.type === 'cake') {
+                    b.broken = true;
+                    // Nom effect
+                    spawnNamEffect(b.x + b.w / 2, b.y + b.h / 2);
+                    GameAudio.coin();
+                    return; // Don't process solid physics for eaten block
+                }
 
                 // Top Collision (Standing on top)
                 if (this.y + this.h > b.y && this.y + this.h < b.y + b.h * 0.5 && this.vy >= 0) {
@@ -1228,8 +1301,7 @@ class Player {
 
         if (this.lives <= 0) {
             // Game Over
-            alert('¡Oh no! Inténtalo de nuevo.');
-            location.reload();
+            GameAudio.gameOver();
         } else {
             // Respawn
             this.x = 100;
@@ -1574,6 +1646,17 @@ function hitBlock(b) {
             if (allLettersRevealed) {
                 // Show special message or bonus
                 spawnRomanticEffect();
+
+                // Spawn Fireworks over the name blocks
+                const nameBlocks = blocks.filter(block => block.content === 'letter');
+                if (nameBlocks.length > 0) {
+                    const minX = Math.min(...nameBlocks.map(b => b.x));
+                    const maxX = Math.max(...nameBlocks.map(b => b.x + b.w));
+                    const centerX = (minX + maxX) / 2;
+                    const topY = nameBlocks[0].y;
+                    spawnFireworks(centerX, topY);
+                }
+
                 setTimeout(() => {
                     GameAudio.coin();
                     coinsCollected += 10; // Bonus coins
@@ -1631,6 +1714,9 @@ function hitBlock(b) {
     } else if (b.content === 'blue_coin') {
         b.hit = true;
         spawnItem(b, 'blue_coin');
+    } else if (b.content === 'cake_trigger') {
+        b.hit = true;
+        spawnPixelCake(-400, canvas.height - 100); // Spawn at the far left on the floor level
     } else {
         b.hit = true;
     }
@@ -1879,4 +1965,89 @@ function spawnMariachis() {
         // Clear note interval
         clearInterval(noteInterval);
     }, 90000); // 90 seconds = 1.5 minutes
+}
+// --- FIREWORKS ---
+function spawnFireworks(centerX, y) {
+    let count = 0;
+    const interval = setInterval(() => {
+        if (count >= 100) { // Approx 20 seconds (100 * 200ms)
+            clearInterval(interval);
+            return;
+        }
+
+        const offsetX = (Math.random() - 0.5) * 600;
+        const offsetY = -50 - Math.random() * 300;
+        const size = 80 + Math.random() * 120;
+        const hue = Math.floor(Math.random() * 360);
+
+        particles.push({
+            type: 'firework',
+            x: centerX + offsetX,
+            y: y + offsetY,
+            size: size,
+            scale: 0.6 + Math.random() * 1.8,
+            filter: `hue-rotate(${hue}deg) brightness(1.6)`,
+            life: 80 + Math.random() * 40
+        });
+
+        // Sound
+        if (count % 4 === 0) GameAudio.coin();
+        count++;
+    }, 200);
+}
+
+// --- PIXEL CAKE ---
+function spawnPixelCake(startX, baseY) {
+    const pSize = 30; // Size of each "pixel" block
+    const cakeMap = [
+        [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0],
+        [0, 0, 0, 0, 0, 0, 1, 1, 4, 4, 1, 1],
+        [0, 0, 0, 0, 1, 1, 1, 4, 4, 1, 1, 4],
+        [0, 0, 0, 1, 1, 4, 4, 1, 1, 4, 4, 1],
+        [0, 0, 1, 1, 1, 4, 4, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 5, 5, 5, 1, 1, 5, 5, 1, 1],
+        [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+        [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+        [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+        [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+        [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2]
+    ];
+
+    const colors = {
+        1: '#4A2E19', // Dark Brown (Chocolate)
+        2: '#E1B28C', // Tan (Cake)
+        3: '#F5DBC1', // Light Tan (Filling)
+        4: '#FFFFFF', // White (Decoration)
+        5: '#2D1B10'  // Darker Brown (Shadow)
+    };
+
+    cakeMap.forEach((row, rIdx) => {
+        row.forEach((cell, cIdx) => {
+            if (cell !== 0) {
+                blocks.push({
+                    x: startX + cIdx * pSize,
+                    y: baseY - (cakeMap.length - rIdx) * pSize,
+                    w: pSize,
+                    h: pSize,
+                    type: 'cake',
+                    color: colors[cell],
+                    hit: false,
+                    broken: false
+                });
+            }
+        });
+    });
+}
+
+function spawnNamEffect(x, y) {
+    particles.push({
+        type: 'text',
+        text: '¡ÑAM!',
+        x: x,
+        y: y,
+        vy: -2,
+        life: 40,
+        color: '#ffeb3b'
+    });
 }

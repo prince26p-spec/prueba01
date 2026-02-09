@@ -54,8 +54,11 @@
             touch-action: none;
             -webkit-tap-highlight-color: transparent;
             filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
-            active: scale(0.9);
             transition: transform 0.1s;
+        }
+
+        .control-btn:active {
+            transform: scale(0.9);
         }
 
         /* Ensure controls don't get hidden behind nav bars */
@@ -78,42 +81,43 @@
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
 
-        <!-- HUD -->
+        <!-- HUD: Mobile Optimized Top Bar -->
         <div id="game-ui-layer"
-            class="absolute top-0 left-0 w-full p-4 flex justify-between items-start pointer-events-none select-none z-30">
-            <!-- Lives -->
-            <div class="glass px-4 py-2 rounded-full flex items-center gap-2">
-                <span class="text-red-500 text-xl">❤️</span>
-                <span id="lives-display" class="font-bold text-lg">3</span>
+            class="absolute top-0 left-0 w-full p-2 md:p-4 flex justify-between items-start pointer-events-none select-none z-30">
+
+            <!-- Left: Lives -->
+            <div class="glass px-3 py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 pointer-events-auto">
+                <span class="text-red-500 text-lg md:text-xl">❤️</span>
+                <span id="lives-display" class="font-bold text-base md:text-lg">3</span>
             </div>
 
-            <!-- Coins -->
-            <div class="glass px-4 py-2 rounded-full flex items-center gap-2">
-                <span class="text-yellow-400 text-xl">🪙</span>
-                <span id="coin-display" class="font-bold text-lg">0</span>
+            <!-- Middle: Coins -->
+            <div class="glass px-3 py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 pointer-events-auto">
+                <span class="text-yellow-400 text-lg md:text-xl">🪙</span>
+                <span id="coin-display" class="font-bold text-base md:text-lg">0</span>
             </div>
 
-            <!-- Timer -->
-            <div class="glass px-4 py-2 rounded-full flex items-center gap-2 min-w-[100px] justify-center">
-                <span class="text-blue-400 text-xl font-bold">⏱️</span>
-                <span id="timer-display" class="font-bold text-lg">05:00</span>
-            </div>
-        </div>
+            <!-- Right: Timer & Sound Combined -->
+            <div class="glass pl-3 pr-1 py-1 md:pr-2 md:py-2 rounded-full flex items-center gap-2 pointer-events-auto">
+                <div class="flex items-center gap-1 md:gap-2">
+                    <span class="text-blue-400 text-lg md:text-xl font-bold">⏱️</span>
+                    <span id="timer-display"
+                        class="font-bold text-base md:text-lg min-w-[45px] md:min-w-[50px] text-center">05:00</span>
+                </div>
 
-        <!-- Music Controls (Top Right) -->
-        <div class="absolute top-4 right-4 flex items-center gap-2 z-50 pointer-events-auto">
-            <!-- Volume Slider -->
-            <div
-                class="glass px-3 py-1 rounded-full hidden md:flex items-center gap-2 transition-all hover:bg-white/20 group">
-                <span class="text-xs">🔊</span>
-                <input id="volume-slider" type="range" min="0" max="1" step="0.1" value="0.4"
-                    class="w-20 accent-pink-500 cursor-pointer h-1 bg-slate-200 rounded-lg appearance-none">
-            </div>
+                <div class="w-px h-5 bg-white/10 mx-1"></div>
 
-            <!-- Mute Button -->
-            <button id="btn-music" class="glass p-3 rounded-full hover:bg-white/20 transition-colors">
-                <span id="music-icon" class="text-xl">🔊</span>
-            </button>
+                <!-- Volume Slider (Hidden on Mobile) -->
+                <div class="hidden md:flex items-center px-1">
+                    <input id="volume-slider" type="range" min="0" max="1" step="0.1" value="0.4"
+                        class="w-16 accent-pink-500 cursor-pointer h-1 bg-white/20 rounded-lg appearance-none focus:outline-none">
+                </div>
+
+                <button id="btn-music"
+                    class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full transition-all shadow-sm">
+                    <span id="music-icon" class="text-base md:text-xl">🔊</span>
+                </button>
+            </div>
         </div>
 
         <!-- Emoji Container -->
@@ -121,15 +125,15 @@
 
         <!-- Mobile Controls -->
         <div id="mobile-controls"
-            class="absolute bottom-6 left-0 right-0 flex justify-between px-6 pointer-events-none z-40 w-full max-w-4xl mx-auto">
+            class="absolute bottom-14 left-0 right-0 flex justify-between px-6 pointer-events-none z-40 w-full max-w-4xl mx-auto">
             <!-- Left Side - Movement -->
             <div class="flex gap-4 pointer-events-auto">
                 <!-- Left Button -->
-                <button id="btn-left" class="control-btn w-20 h-20 opacity-80 active:opacity-100 transition-opacity">
+                <button id="btn-left" class="control-btn w-20 h-20 opacity-40 active:opacity-100 transition-opacity">
                     <img src="assets/artistas/boton.png" class="w-full h-full object-contain" alt="Left">
                 </button>
                 <!-- Right Button (Flipped) -->
-                <button id="btn-right" class="control-btn w-20 h-20 opacity-80 active:opacity-100 transition-opacity">
+                <button id="btn-right" class="control-btn w-20 h-20 opacity-40 active:opacity-100 transition-opacity">
                     <img src="assets/artistas/boton.png" class="w-full h-full object-contain transform rotate-180"
                         alt="Right">
                 </button>
@@ -144,13 +148,13 @@
         </div>
 
         <!-- Game World UI (Dialogues) -->
-        <div id="game-ui-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-30"></div>
+        <div id="dialogue-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-30"></div>
     </div>
 
     <!-- Start Overlay -->
     <div id="start-overlay"
         class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
-        <div class="glass p-10 rounded-3xl text-center max-w-md mx-4 animate__animated animate__zoomIn">
+        <div class="glass p-6 md:p-10 rounded-3xl text-center max-w-md mx-4 animate__animated animate__zoomIn">
             <h1
                 class="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-purple-400">
                 ¡Una Aventura para Ti!
